@@ -239,3 +239,50 @@ except Exception as e:
     logging.error(f"Ocorreu um erro inesperado: {e}")
     raise
 logging.info("Despesas inseridas com sucesso")
+
+# Criando a view deputados_completo para facilitar o acesso aos dados
+try:
+    logging.info("Criando a view deputados_completo")
+    
+    # SQL para criar a view
+    create_view_sql = """
+    CREATE OR REPLACE VIEW deputados_completo AS
+    SELECT 
+        dep.id,
+        dep.nome AS nomeCampanha,
+        dep.siglaPartido,
+        dep.siglaUf,
+        dep.urlFoto,
+        dep_det.nomeCivil,
+        dep_det.cpf,
+        dep_det.sexo,
+        dep_det.dataNascimento,
+        dep_det.dataFalecimento,
+        dep_det.ufNascimento,
+        dep_det.municipioNascimento,
+        dep_det.escolaridade,
+        dep_ult.siglaPartido AS ultimoPartido,
+        dep_ult.situacao,
+        dep_ult.condicaoEleitoral,
+        dep_ult.data AS ultimoStatus,
+        dep_gab.predio,
+        dep_gab.sala,
+        dep_gab.andar,
+        dep_gab.telefone,
+        dep_gab.email
+    FROM
+        deputados dep
+        JOIN deputados_detalhado dep_det ON dep.id = dep_det.id
+        JOIN deputados_ultimo_status dep_ult ON dep.id = dep_ult.id_deputado
+        JOIN deputados_ultimo_gabinete dep_gab ON dep.id = dep_gab.id_deputado
+    """
+    
+    # Executar o SQL para criar a view
+    with engine.connect() as connection:
+        connection.execute(create_view_sql)
+        connection.commit()
+    
+    logging.info("View deputados_completo criada com sucesso")
+except Exception as e:
+    logging.error(f"Erro ao criar a view deputados_completo: {e}")
+    raise
