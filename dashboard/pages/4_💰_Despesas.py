@@ -393,50 +393,52 @@ with tab3:
     
     with analise_tab1:
         st.subheader("Análise de Fornecedores")
-        
+
         # Calcular top fornecedores
         top_fornecedores = (despesas_filtradas.groupby(['nomeFornecedor', 'cnpjCpfFornecedor'])
-                           ['valorDocumento']
-                           .sum()
-                           .reset_index()
-                           .sort_values('valorDocumento', ascending=False))
-        
+                        ['valorDocumento']
+                        .sum()
+                        .reset_index()
+                        .sort_values('valorDocumento', ascending=False))
+
         # Limitar a top 20 para melhor visualização
         top_fornecedores = top_fornecedores.head(20)
-        
-        # Formatar valores
-        top_fornecedores['valorDocumento'] = top_fornecedores['valorDocumento'].apply(formatar_moeda)
-        
+
+        # Salvar uma cópia formatada só para exibição no texto do gráfico
+        top_fornecedores['valorDocumentoFormatado'] = top_fornecedores['valorDocumento'].apply(formatar_moeda)
+
         # Renomear colunas
         top_fornecedores = top_fornecedores.rename(columns={
             'nomeFornecedor': 'Fornecedor',
             'cnpjCpfFornecedor': 'CNPJ/CPF',
             'valorDocumento': 'Total Gasto (R$)'
         })
-        
+
         # Exibir tabela
         st.dataframe(
-            top_fornecedores,
+            top_fornecedores[['Fornecedor', 'CNPJ/CPF', 'Total Gasto (R$)']].assign(
+                **{'Total Gasto (R$)': top_fornecedores['Total Gasto (R$)'].apply(formatar_moeda)}
+            ),
             hide_index=True,
             use_container_width=True
         )
-        
+
         # Gráfico de barras para top fornecedores
         fig = px.bar(
             top_fornecedores,
             x='Fornecedor',
             y='Total Gasto (R$)',
             title='Top 20 Fornecedores por Valor Total',
-            text='Total Gasto (R$)',
+            text='valorDocumentoFormatado',
             color='Fornecedor'
         )
-        
+
         fig.update_layout(
             xaxis_tickangle=45,
             showlegend=False,
             height=500
         )
-        
+
         st.plotly_chart(fig, use_container_width=True)
         
         # Análise de fornecedores por tipo de despesa
@@ -507,8 +509,11 @@ with tab3:
             )
             
             # Gráfico de barras para top deputados
+            # Ordenar os dados em ordem decrescente pelo valor total gasto
+            top_deputados = gastos_por_deputado.sort_values('Total Gasto (R$)', ascending=False).head(20)
+            
             fig = px.bar(
-                gastos_por_deputado.head(20),
+                top_deputados,
                 x='Deputado',
                 y='Total Gasto (R$)',
                 color='Partido',
@@ -611,50 +616,7 @@ with tab3:
         )
         
         st.plotly_chart(fig, use_container_width=True)
-        
-        # Análise de gastos por período do dia
-        despesas_filtradas['hora'] = pd.to_datetime(despesas_filtradas['dataDocumento']).dt.hour
-        
-        # Definir períodos do dia
-        def definir_periodo(hora):
-            if 5 <= hora < 12:
-                return 'Manhã'
-            elif 12 <= hora < 18:
-                return 'Tarde'
-            else:
-                return 'Noite'
-        
-        despesas_filtradas['periodo'] = despesas_filtradas['hora'].apply(definir_periodo)
-        
-        # Ordem dos períodos
-        ordem_periodos = ['Manhã', 'Tarde', 'Noite']
-        
-        # Calcular gastos por período
-        gastos_por_periodo = (despesas_filtradas.groupby('periodo')
-                             ['valorDocumento']
-                             .sum()
-                             .reindex(ordem_periodos)
-                             .reset_index())
-        
-        # Gráfico de barras para gastos por período
-        fig = px.bar(
-            gastos_por_periodo,
-            x='periodo',
-            y='valorDocumento',
-            title='Gastos por Período do Dia',
-            labels={'periodo': 'Período', 'valorDocumento': 'Total Gasto (R$)'},
-            text=gastos_por_periodo['valorDocumento'].apply(formatar_moeda)
-        )
-        
-        fig.update_layout(
-            xaxis_title="Período",
-            yaxis_title="Total Gasto (R$)",
-            yaxis_tickformat=",.2f",
-            yaxis_tickprefix="R$ ",
-            height=500
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
+
 
 with tab4:
     st.header("Comparativos")
